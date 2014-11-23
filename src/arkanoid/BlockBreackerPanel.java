@@ -1,4 +1,5 @@
 package arkanoid;
+
 import java.awt.Graphics;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -7,45 +8,46 @@ import java.util.Random;
 
 import javax.swing.JPanel;
 
-
 public class BlockBreackerPanel extends JPanel implements KeyListener {
 
 	ArrayList<Block> blocks = new ArrayList<>();
 	ArrayList<Block> balls = new ArrayList<>();
 	ArrayList<Block> powerups = new ArrayList<>();
-	
+
 	Block paddle;
-	
+
 	Thread thread;
 	Animator animator;
-	
+
 	int ballSize = 25;
+	private boolean gameStarted = false;
 
+	
 	BlockBreackerPanel() {
-		paddle = new Block(175, 480, 150, 25, "paddle.png");
+		
+		// setting of initial positions of GUI elements and a brick map		
+		
+		// create paddle object
+		paddle = new Paddle(175, 480);
 
-		for (int i = 0; i < 8; i++) {
-			blocks.add(new Block((i * 60 + 2), 0, 60, 25, "blue.png"));
+		// add brics 4 rows each have 8 bricks (should be consistent with frame width)
+		for (int i = 0; i < 100; i += 25) {
+			for (int j = 0; j < 8; j++) {
+				blocks.add(new Brick((j * 60 + 2), i));
+			}
 		}
-		for (int i = 0; i < 8; i++) {
-			blocks.add(new Block((i * 60 + 2), 25, 60, 25, "red.png"));
-		}
-		for (int i = 0; i < 8; i++) {
-			blocks.add(new Block((i * 60 + 2), 50, 60, 25, "green.png"));
-		}
-		for (int i = 0; i < 8; i++) {
-			blocks.add(new Block((i * 60 + 2), 75, 60, 25, "yellow.png"));
-		}
-		
+
 		Random random = new Random();
-		
-		// add powerups to some bricks
+
+		// add powerups "true" to some bricks
 		for (int i = 0; i < 8; i++) {
 			blocks.get(random.nextInt(32)).powerup = true;
 		}
-		
-		balls.add(new Block(237, 437, 25, 25, "ball.png"));
 
+		// create a ball
+		balls.add(new Ball(237, 437));
+
+		// next two is needed to set keylisteners to the panel
 		addKeyListener(this);
 		setFocusable(true);
 	}
@@ -66,48 +68,52 @@ public class BlockBreackerPanel extends JPanel implements KeyListener {
 
 	public void update() {
 		for (Block p : powerups) {
-			p.y+=1;
+			p.y += 1;
 			if (p.intersects(paddle) && !p.destroyed) {
 				p.destroyed = true;
-				balls.add(new Block(paddle.dx+75, 437, 25, 25, "ball.png"));
+				balls.add(new Ball(paddle.dx + 75, 437));
 			}
 		}
 		for (Block ball : balls) {
-			
+
 			ball.x += ball.dx;
-			// check if ball tauched the field LEFT or RIGHT boundary then change X moving direction
-			if (ball.x > (getWidth() - ballSize) && ball.dx > 0 || ball.x < 0)
+			// check if ball tauched the field LEFT or RIGHT boundary then
+			// change X moving direction
+			if (ball.x > (getWidth() - Ball.getBallWidth()) && ball.dx > 0 || ball.x < 0)
 				ball.dx *= -1;
-			
+
 			ball.y += ball.dy;
-			// check if the ball tauched upper boundary or paddle then change Y direction
+			// check if the ball tauched upper boundary or paddle then change Y
+			// direction
 			if (ball.y < 0 || ball.intersects(paddle))
 				ball.dy *= -1;
-			
+
 			// cheeck if ball tauched any block
 			for (Block bl : blocks) {
-				
+
 				// if ball tauched right or left block section
 				if ((bl.rightSideRect.intersects(ball) || bl.leftSideRect
 						.intersects(ball)) && !bl.destroyed) {
 					ball.dx *= -1;
 					bl.destroyed = true;
 					// if block have powerup then throw it
-					if (bl.powerup) {
-						powerups.add(new Block(bl.x, bl.y, 25, 19, "extra.png"));
-					}
+					addPowerup(bl);
 				}
-				// if the ball tauched other space on block (upper side or bottom)
+				// if the ball tauched other space on block (upper side or
+				// bottom)
 				else if (ball.intersects(bl) && !bl.destroyed) {
 					bl.destroyed = true;
 					ball.dy *= -1;
-					// if block have powerup then throw it
-					if (bl.powerup) {
-						powerups.add(new Block(bl.x, bl.y, 25, 19, "extra.png"));
-					}
+					addPowerup(bl);
 				}
-			
+
 			}
+		}
+	}
+
+	private void addPowerup(Block bl) {
+		if (bl.powerup) {
+			powerups.add(new Powerup(bl.x, bl.y));
 		}
 	}
 
@@ -118,9 +124,15 @@ public class BlockBreackerPanel extends JPanel implements KeyListener {
 	@Override
 	public void keyPressed(KeyEvent e) {
 		if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-			animator = new Animator(this);
-			thread = new Thread(animator);
-			thread.start();
+			if (gameStarted) {
+// put logic to stop the game
+			} else {
+				animator = new Animator(this);
+				thread = new Thread(animator);
+				thread.start();
+				gameStarted = true;
+			}
+			
 		}
 		if (e.getKeyCode() == KeyEvent.VK_LEFT && paddle.x > 0) {
 			paddle.x -= 25;
