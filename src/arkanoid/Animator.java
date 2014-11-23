@@ -4,15 +4,17 @@ package arkanoid;
 public class Animator implements Runnable {
 	
 	BlockBreackerPanel bp;
+	GameModel gm;
 	
-	Animator(BlockBreackerPanel bp) {
+	Animator(BlockBreackerPanel bp, GameModel gm) {
 		this.bp = bp;
+		this.gm = gm;
 	}
 	
 	@Override
 	public void run() {
 		while(true) {
-			bp.update();
+			gm.update();
 			bp.repaint();
 			try {
 				Thread.sleep(10);
